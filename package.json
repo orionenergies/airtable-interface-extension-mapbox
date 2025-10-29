@@ -1,4 +1,14 @@
 {
+    "name": "airtable-interface-extension-mapbox",
+    "version": "1.0.0",
+    "description": "Airtable Interface Extension - Interactive map with GPS coordinates support, color customization, and clustering features",
+    "keywords": ["airtable", "interface-extension", "mapbox", "map", "gps", "geolocation"],
+    "author": "Orion Energies",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/orionenergies/airtable-interface-extension-mapbox.git"
+    },
+    "license": "MIT",
     "scripts": {
         "lint": "eslint --ext .js,.jsx,.ts,.tsx frontend",
         "typecheck": "tsc --noEmit"

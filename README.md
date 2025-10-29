@@ -1,6 +1,8 @@
-# Map Interface Extension for Airtable
+# Airtable Interface Extension - Mapbox
 
 This Airtable Interface Extension displays your records on a fullscreen interactive map using Mapbox with GPS coordinates. Perfect for visualizing project locations, site visits, or any data with geographic coordinates.
+
+📦 **Repository**: [orionenergies/airtable-interface-extension-mapbox](https://github.com/orionenergies/airtable-interface-extension-mapbox)
 
 ## Features
 
