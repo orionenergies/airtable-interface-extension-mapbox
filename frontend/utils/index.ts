@@ -1,0 +1,2 @@
+export {parseGPSCoordinates} from './gpsParser';
+
