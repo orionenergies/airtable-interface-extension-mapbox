@@ -29,3 +29,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Vertical slider styles */
+.marker-size-slider-vertical {
+    -webkit-appearance: none;
+    appearance: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+}
+
+.marker-size-slider-vertical::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.marker-size-slider-vertical::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.marker-size-slider-vertical::-webkit-slider-track {
+    width: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+}
+
+.marker-size-slider-vertical::-moz-range-track {
+    width: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+}
+
+.dark .marker-size-slider-vertical::-webkit-slider-thumb {
+    background: #60a5fa;
+}
+
+.dark .marker-size-slider-vertical::-moz-range-thumb {
+    background: #60a5fa;
+}
+
+.dark .marker-size-slider-vertical::-webkit-slider-track {
+    background: #374151;
+}
+
+.dark .marker-size-slider-vertical::-moz-range-track {
+    background: #374151;
+}

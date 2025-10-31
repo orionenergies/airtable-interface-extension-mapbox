@@ -2,6 +2,8 @@ import {Marker} from 'react-map-gl/mapbox';
 import {colorUtils} from '@airtable/blocks/interface/ui';
 import type {LocationData} from '../types';
 import {DEFAULT_MARKER_COLOR} from '../constants';
+import type {MarkerIconType} from './MarkerIconSelector';
+import {getMakiIconDataURL} from '../utils/makiIcons';
 
 interface MapMarkerProps {
     location: LocationData;
@@ -13,6 +15,8 @@ interface MapMarkerProps {
     onZoomToLocation: () => void;
     onShowDetails: () => void;
     hasPermissionToExpand: boolean;
+    markerSize: number;
+    markerIconType: MarkerIconType;
 }
 
 export function MapMarker({
@@ -25,9 +29,30 @@ export function MapMarker({
     onZoomToLocation,
     onShowDetails,
     hasPermissionToExpand,
+    markerSize,
+    markerIconType,
 }: MapMarkerProps) {
     const markerColor = location.color || DEFAULT_MARKER_COLOR;
     const markerColorHex = colorUtils.getHexForColor(markerColor);
+    
+    const renderMarker = () => {
+        const iconSize = markerSize;
+        const iconDataURL = getMakiIconDataURL(markerIconType, markerColorHex, iconSize);
+        
+        return (
+            <img
+                src={iconDataURL}
+                alt="Marqueur"
+                width={iconSize}
+                height={iconSize}
+                className="drop-shadow-lg transition-all"
+                style={{
+                    display: 'block',
+                    filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
+                }}
+            />
+        );
+    };
     
     return (
         <Marker
@@ -42,17 +67,12 @@ export function MapMarker({
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                 >
-                    <div 
-                        className="w-6 h-6 rounded-full border-2 border-white shadow-lg relative transition-all"
-                        style={{backgroundColor: markerColorHex}}
-                    >
-                        <div 
-                            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent transition-all"
-                            style={{borderTopColor: markerColorHex}}
-                        ></div>
-                    </div>
+                    {renderMarker()}
                     {!hasActiveMenu && (
-                        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                        <div 
+                            className="absolute left-1/2 transform -translate-x-1/2 bg-black text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20"
+                            style={{bottom: `${markerSize + 8}px`}}
+                        >
                             {location.name}
                         </div>
                     )}
@@ -64,6 +84,7 @@ export function MapMarker({
                         onZoomToLocation={onZoomToLocation}
                         onShowDetails={onShowDetails}
                         hasPermissionToExpand={hasPermissionToExpand}
+                        markerSize={markerSize}
                     />
                 )}
             </div>
@@ -76,6 +97,7 @@ interface MarkerMenuProps {
     onZoomToLocation: () => void;
     onShowDetails: () => void;
     hasPermissionToExpand: boolean;
+    markerSize: number;
 }
 
 function MarkerMenu({
@@ -83,10 +105,12 @@ function MarkerMenu({
     onZoomToLocation,
     onShowDetails,
     hasPermissionToExpand,
+    markerSize,
 }: MarkerMenuProps) {
     return (
         <div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[180px] z-30"
+            className="absolute left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[180px] z-30"
+            style={{bottom: `${markerSize + 8}px`}}
             onClick={(e) => e.stopPropagation()}
         >
             <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">

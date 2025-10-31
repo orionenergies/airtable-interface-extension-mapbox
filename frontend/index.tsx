@@ -1,36 +1,35 @@
-import {useCallback, useEffect, useState, useMemo, useRef} from 'react';
-import {
-    initializeBlock,
-    useBase,
-    useRecords,
-    useCustomProperties,
-    expandRecord,
-} from '@airtable/blocks/interface/ui';
-import {FieldType, Base, Field} from '@airtable/blocks/interface/models';
+import {useCallback, useMemo, useRef, useState} from 'react';
+import {initializeBlock, useBase, useRecords, useCustomProperties} from '@airtable/blocks/interface/ui';
+import {FieldType, Field} from '@airtable/blocks/interface/models';
 import MapBoxMap, {NavigationControl} from 'react-map-gl/mapbox';
 import type {ViewStateChangeEvent, MapRef} from 'react-map-gl/mapbox';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './style.css';
 
-import type {LocationData} from './types';
+import {DEFAULT_MAP_VIEW, MIN_ZOOM, MAX_ZOOM, DEFAULT_MARKER_COLOR} from './constants';
+import {createCustomProperties} from './customProperties';
 import {
-    DEFAULT_MAP_VIEW,
-    MARKER_ZOOM_LEVEL,
-    SINGLE_LOCATION_ZOOM,
-    MIN_ZOOM,
-    MAX_ZOOM,
-    BOUNDS_PADDING,
-} from './constants';
-import {useMapViewState, useGPSLocations, useColorCustomization, useColorCounters} from './hooks';
+    useMapViewState,
+    useGPSLocations,
+    useColorCustomization,
+    useColorCounters,
+    useMarkerCustomization,
+    useMapInteractions,
+    useMapHandlers,
+    useInitialMapView,
+} from './hooks';
 import {
     ConfigurationScreen,
     PointsCounter,
-    RecenterButton,
     MapMarker,
-    ColorCustomizationBar,
     ColorFieldSelectionModal,
     ColorValuesModal,
+    InfoIcon,
+    InfoModal,
+    MapConfigurationPanel,
+    ColorConfigurationColumn,
+    MapControlsGroup,
 } from './components';
 
 function MapExtensionApp() {
@@ -38,63 +37,36 @@ function MapExtensionApp() {
     const table = base.tables[0];
     const records = useRecords(table);
 
-    // A list of properties that can be configured for this extension
-    const getCustomProperties = useCallback((base: Base) => {
-        const table = base.tables[0];
-        const textFieldTypes = [FieldType.SINGLE_LINE_TEXT, FieldType.MULTILINE_TEXT];
-        const textFields = table.fields.filter(
-            (field: Field) =>
-                // Text fields
-                textFieldTypes.includes(field.type) ||
-                // Fields that produce a text value
-                (field.config.options &&
-                    'result' in field.config.options &&
-                    field.config.options.result &&
-                    textFieldTypes.includes(field.config.options.result.type)),
-        );
-
-        return [
-            {
-                key: 'mapboxApiKey',
-                type: 'string' as const,
-                label: 'Mapbox token',
-                defaultValue: '',
-            },
-            {
-                key: 'labelField',
-                type: 'field' as const,
-                label: 'Label field',
-                table: table,
-                possibleValues: textFields,
-            },
-            {
-                key: 'gpsField',
-                type: 'field' as const,
-                label: 'GPS coordinates field',
-                table: table,
-                possibleValues: textFields,
-            },
-            {
-                key: 'autoCenterOnLoad',
-                type: 'boolean' as const,
-                label: 'Automatically center map',
-                defaultValue: true,
-            },
-        ];
-    }, []);
-
+    // Custom properties configuration
+    const getCustomProperties = useCallback(createCustomProperties, []);
     const {customPropertyValueByKey, errorState} = useCustomProperties(getCustomProperties);
 
+    // Map view state
     const storageKey = useMemo(() => `mapView:${base.id}:${table.id}`, [base.id, table.id]);
     const {viewState, setViewState, savedViewRef, initialCameraAppliedRef} = useMapViewState(
         storageKey,
         DEFAULT_MAP_VIEW,
     );
 
-    const [hoveredLocationId, setHoveredLocationId] = useState<string | null>(null);
-    const [activeMenuLocationId, setActiveMenuLocationId] = useState<string | null>(null);
+    // Map reference and ready state
     const mapRef = useRef<MapRef | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
+
+    // Marker customization (size and icon type)
+    const {markerSize, markerIconType, setMarkerSize, setMarkerIconType} = useMarkerCustomization(
+        base.id,
+        table.id,
+    );
+
+    // Map interactions (hover, menu, modal)
+    const {
+        hoveredLocationId,
+        setHoveredLocationId,
+        activeMenuLocationId,
+        setActiveMenuLocationId,
+        isInfoModalOpen,
+        setIsInfoModalOpen,
+    } = useMapInteractions(mapRef);
 
     // Extract individual field values to avoid object reference issues
     const mapboxApiKey = customPropertyValueByKey.mapboxApiKey as string;
@@ -105,16 +77,41 @@ function MapExtensionApp() {
     const isConfigured = Boolean(mapboxApiKey && labelField && gpsField);
 
     // Fields available for colorization
+    // Exclude text and number fields that typically have too many unique values
     const colorableFields = useMemo(() => {
         return table.fields.filter(
-            (field) =>
-                field.type === FieldType.SINGLE_SELECT ||
-                field.type === FieldType.MULTIPLE_SELECTS ||
-                field.type === FieldType.CHECKBOX ||
-                field.type === FieldType.SINGLE_COLLABORATOR ||
-                field.type === FieldType.FORMULA ||
-                field.type === FieldType.CREATED_BY ||
-                field.type === FieldType.LAST_MODIFIED_BY,
+            (field) => {
+                // Exclude text fields (too many unique values)
+                if (
+                    field.type === FieldType.SINGLE_LINE_TEXT ||
+                    field.type === FieldType.MULTILINE_TEXT ||
+                    field.type === FieldType.URL ||
+                    field.type === FieldType.EMAIL ||
+                    field.type === FieldType.PHONE_NUMBER
+                ) {
+                    return false;
+                }
+                // Exclude number fields (too many unique values)
+                if (
+                    field.type === FieldType.NUMBER ||
+                    field.type === FieldType.CURRENCY ||
+                    field.type === FieldType.PERCENT ||
+                    field.type === FieldType.AUTO_NUMBER
+                ) {
+                    return false;
+                }
+                // Exclude date/time fields (usually too many unique values)
+                if (
+                    field.type === FieldType.DATE ||
+                    field.type === FieldType.DATE_TIME ||
+                    field.type === FieldType.CREATED_TIME ||
+                    field.type === FieldType.LAST_MODIFIED_TIME
+                ) {
+                    return false;
+                }
+                // Include all other field types
+                return true;
+            },
         );
     }, [table.fields]);
 
@@ -122,6 +119,7 @@ function MapExtensionApp() {
     const {
         colorFieldId,
         colorConfiguration,
+        valueVisibility,
         showFieldModal,
         showColorModal,
         fieldSearchQuery,
@@ -135,6 +133,8 @@ function MapExtensionApp() {
         handleColorChange,
         handleAutoAssignColors,
         handleRemoveField,
+        handleToggleValueVisibility,
+        isValueVisible,
     } = useColorCustomization(base.id, table.id, records, colorableFields);
 
     const selectedColorField = colorFieldId
@@ -148,177 +148,33 @@ function MapExtensionApp() {
         isConfigured,
         colorField: selectedColorField,
         colorConfiguration,
+        valueVisibility,
     });
 
     // Color counters for display
     const colorCounters = useColorCounters(locations, colorFieldId);
 
-    // Close menu when clicking on the map
-    useEffect(() => {
-        const handleMapClick = () => {
-            if (activeMenuLocationId) {
-                setActiveMenuLocationId(null);
-            }
-        };
+    // Map handlers (marker click, zoom, show details, recenter)
+    const {handleMarkerClick, handleZoomToLocation, handleShowDetails, handleRecenter} =
+        useMapHandlers({
+            mapRef,
+            table,
+            locations,
+            setViewState,
+            setActiveMenuLocationId,
+        });
 
-        const mapInstance = mapRef.current?.getMap?.();
-        if (mapInstance) {
-            mapInstance.on('click', handleMapClick);
-            return () => {
-                mapInstance.off('click', handleMapClick);
-            };
-        }
-    }, [activeMenuLocationId]);
-
-    // Decide initial view once, preferring auto-fit when allowed, otherwise fallback to saved view.
-    useEffect(() => {
-        if (!isConfigured || !isMapReady || initialCameraAppliedRef.current) return;
-
-        // 1) Prefer auto-fit when allowed and locations are available
-        if (autoCenterOnLoad && locations.length > 0) {
-            if (locations.length === 1) {
-                const only = locations[0];
-                setViewState({
-                    latitude: only.lat!,
-                    longitude: only.lng!,
-                    zoom: 12,
-                });
-            } else {
-                const lats = locations.map((l) => l.lat!);
-                const lngs = locations.map((l) => l.lng!);
-                const minLat = Math.min(...lats);
-                const maxLat = Math.max(...lats);
-                const minLng = Math.min(...lngs);
-                const maxLng = Math.max(...lngs);
-
-                const bounds = new mapboxgl.LngLatBounds([minLng, minLat], [maxLng, maxLat]);
-
-                const mapInstance = mapRef.current?.getMap?.();
-                if (mapInstance) {
-                    const camera = mapInstance.cameraForBounds(bounds, {padding: 80});
-                    if (camera && camera.center) {
-                        const center = mapboxgl.LngLat.convert(
-                            camera.center as mapboxgl.LngLatLike,
-                        );
-                        const zoomValue = typeof camera.zoom === 'number' ? camera.zoom : 8;
-                        setViewState({
-                            latitude: center.lat,
-                            longitude: center.lng,
-                            zoom: Math.min(Math.max(zoomValue, 1), 16),
-                        });
-                    }
-                } else {
-                    const centerLat = (minLat + maxLat) / 2;
-                    const centerLng = (minLng + maxLng) / 2;
-                    setViewState({
-                        latitude: centerLat,
-                        longitude: centerLng,
-                        zoom: 8,
-                    });
-                }
-            }
-            initialCameraAppliedRef.current = true;
-            return;
-        }
-
-        // 2) Otherwise, apply saved view if available; regardless, mark as applied to avoid re-runs
-        if (savedViewRef.current) {
-            setViewState(savedViewRef.current);
-        }
-        initialCameraAppliedRef.current = true;
-    }, [
+    // Initial map view positioning
+    useInitialMapView({
         isConfigured,
         isMapReady,
         autoCenterOnLoad,
         locations,
+        mapRef,
         savedViewRef,
         initialCameraAppliedRef,
         setViewState,
-    ]);
-
-    // Handle marker click - toggle menu
-    const handleMarkerClick = (location: LocationData, event: React.MouseEvent) => {
-        event.stopPropagation();
-        setActiveMenuLocationId((prev) => (prev === location.id ? null : location.id));
-    };
-
-    const handleZoomToLocation = (location: LocationData) => {
-        const mapInstance = mapRef.current?.getMap?.();
-        if (mapInstance) {
-            mapInstance.flyTo({
-                center: [location.lng!, location.lat!],
-                zoom: MARKER_ZOOM_LEVEL,
-            });
-        } else {
-            setViewState({
-                latitude: location.lat!,
-                longitude: location.lng!,
-                zoom: MARKER_ZOOM_LEVEL,
-            });
-        }
-        setActiveMenuLocationId(null);
-    };
-
-    const handleShowDetails = (location: LocationData) => {
-        const shouldExpandRecords = table.hasPermissionToExpandRecords();
-        if (shouldExpandRecords) {
-            expandRecord(location.record);
-        }
-        setActiveMenuLocationId(null);
-    };
-
-    const handleRecenter = () => {
-        if (locations.length === 0) return;
-
-        if (locations.length === 1) {
-            const only = locations[0];
-            const mapInstance = mapRef.current?.getMap?.();
-            if (mapInstance) {
-                mapInstance.flyTo({
-                    center: [only.lng!, only.lat!],
-                    zoom: SINGLE_LOCATION_ZOOM,
-                });
-            } else {
-                setViewState({
-                    latitude: only.lat!,
-                    longitude: only.lng!,
-                    zoom: SINGLE_LOCATION_ZOOM,
-                });
-            }
-        } else {
-            const lats = locations.map((l) => l.lat!);
-            const lngs = locations.map((l) => l.lng!);
-            const minLat = Math.min(...lats);
-            const maxLat = Math.max(...lats);
-            const minLng = Math.min(...lngs);
-            const maxLng = Math.max(...lngs);
-
-            const bounds = new mapboxgl.LngLatBounds([minLng, minLat], [maxLng, maxLat]);
-
-            const mapInstance = mapRef.current?.getMap?.();
-            if (mapInstance) {
-                const camera = mapInstance.cameraForBounds(bounds, {padding: BOUNDS_PADDING});
-                if (camera && camera.center) {
-                    const center = mapboxgl.LngLat.convert(
-                        camera.center as mapboxgl.LngLatLike,
-                    );
-                    const zoomValue = typeof camera.zoom === 'number' ? camera.zoom : 8;
-                    mapInstance.flyTo({
-                        center: [center.lng, center.lat],
-                        zoom: Math.min(Math.max(zoomValue, MIN_ZOOM), MAX_ZOOM),
-                    });
-                }
-            } else {
-                const centerLat = (minLat + maxLat) / 2;
-                const centerLng = (minLng + maxLng) / 2;
-                setViewState({
-                    latitude: centerLat,
-                    longitude: centerLng,
-                    zoom: 8,
-                });
-            }
-        }
-    };
+    });
 
     if (!isConfigured) {
         return <ConfigurationScreen />;
@@ -345,12 +201,15 @@ function MapExtensionApp() {
     return (
         <div className="w-full h-screen flex flex-col">
             {/* Customization Bar */}
-            <ColorCustomizationBar
-                activeColorField={selectedColorField || null}
-                colorConfiguration={colorConfiguration}
-                onOpenFieldModal={() => setShowFieldModal(true)}
-                onOpenColorModal={() => setShowColorModal(true)}
-            />
+            <MapConfigurationPanel>
+                <ColorConfigurationColumn
+                    activeColorField={selectedColorField || null}
+                    colorConfiguration={colorConfiguration}
+                    onOpenFieldModal={() => setShowFieldModal(true)}
+                    onOpenColorModal={() => setShowColorModal(true)}
+                    onRemoveField={handleRemoveField}
+                />
+            </MapConfigurationPanel>
 
             {/* Color Field Selection Modal */}
             <ColorFieldSelectionModal
@@ -369,24 +228,27 @@ function MapExtensionApp() {
                 searchQuery={valueSearchQuery}
                 uniqueValues={uniqueValues}
                 colorConfiguration={colorConfiguration}
+                valueVisibility={valueVisibility}
                 onClose={() => setShowColorModal(false)}
                 onSearchChange={setValueSearchQuery}
                 onColorChange={handleColorChange}
                 onAutoAssignColors={handleAutoAssignColors}
                 onRemoveField={handleRemoveField}
+                onToggleValueVisibility={handleToggleValueVisibility}
+                isValueVisible={isValueVisible}
             />
 
             {/* Map Container */}
             <div className="flex-1 relative">
-                {hideMapUntilCameraReady && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                        <div className="flex items-center space-x-3 text-gray-700 dark:text-gray-300">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                            <span>Preparing map…</span>
-                        </div>
+            {hideMapUntilCameraReady && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                    <div className="flex items-center space-x-3 text-gray-700 dark:text-gray-300">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <span>Preparing map…</span>
                     </div>
-                )}
-                <MapBoxMap
+                </div>
+            )}
+            <MapBoxMap
                 mapLib={mapboxgl}
                 {...viewState}
                 style={{
@@ -411,20 +273,41 @@ function MapExtensionApp() {
                         isHovered={hoveredLocationId === location.id}
                         hasActiveMenu={activeMenuLocationId === location.id}
                         onMarkerClick={(e) => handleMarkerClick(location, e)}
-                        onMouseEnter={() => setHoveredLocationId(location.id)}
-                        onMouseLeave={() =>
-                            setHoveredLocationId((prev) => (prev === location.id ? null : prev))
-                        }
+                            onMouseEnter={() => setHoveredLocationId(location.id)}
+                            onMouseLeave={() =>
+                                setHoveredLocationId((prev) => (prev === location.id ? null : prev))
+                            }
                         onZoomToLocation={() => handleZoomToLocation(location)}
                         onShowDetails={() => handleShowDetails(location)}
                         hasPermissionToExpand={table.hasPermissionToExpandRecords()}
+                        markerSize={markerSize}
+                        markerIconType={markerIconType}
                     />
                 ))}
-                </MapBoxMap>
+            </MapBoxMap>
 
                 <PointsCounter count={locations.length} colorCounters={colorCounters} />
-                <RecenterButton onClick={handleRecenter} isVisible={locations.length > 0} />
+                <InfoIcon onClick={() => setIsInfoModalOpen(true)} />
+                {locations.length > 0 && (
+                    <MapControlsGroup
+                        onRecenter={handleRecenter}
+                        isRecenterVisible={locations.length > 0}
+                        markerSize={markerSize}
+                        markerIconType={markerIconType}
+                        markerColor={locations[0]?.color || DEFAULT_MARKER_COLOR}
+                        onMarkerSizeChange={setMarkerSize}
+                        onMarkerIconTypeChange={setMarkerIconType}
+                    />
+                )}
             </div>
+
+            {/* Info Modal */}
+            <InfoModal
+                isOpen={isInfoModalOpen}
+                onClose={() => setIsInfoModalOpen(false)}
+                totalPoints={locations.length}
+                hasColorCustomization={Boolean(selectedColorField)}
+            />
         </div>
     );
 }

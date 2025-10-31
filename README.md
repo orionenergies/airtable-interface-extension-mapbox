@@ -15,24 +15,39 @@ This Airtable Interface Extension displays your records on a fullscreen interact
 -   **Dark mode support**: Automatically switches map style based on system theme
 -   **Real-time updates**: Map updates automatically when records change
 
-### Interactive Pins
--   **Context menu**: Click any pin to access:
+### Interactive Markers
+-   **Context menu**: Click any marker to access:
     -   🔍 **Zoom to location**: Focus on a specific point
     -   📋 **Show details**: Open the full record detail panel (when permitted)
 -   **Hover tooltips**: See location names on hover
--   **Dynamic colors**: Color-code your pins based on field values
+-   **Customizable markers**: Choose from 3 icon styles (pin, circle, triangle)
+-   **Adjustable size**: Vertical slider to control marker size
+-   **White borders**: Markers have white borders for better visibility when overlapping
+-   **Dynamic colors**: Color-code your markers based on field values
 
 ### Visual Customization
--   **Color by field**: Assign colors to pins based on Single Select or Multiple Selects field values
+-   **Configuration panel**: Collapsible panel at the top for easy access to customization options
+-   **Color by field**: Assign colors to markers based on various field types
 -   **Color picker**: Choose from 10 official Airtable colors for each value
 -   **Auto-assign colors**: Quick setup with automatic color distribution
+-   **Visibility toggle**: Show/hide markers by value with a simple eye icon
+-   **Easy removal**: Remove color customization with one click
 -   **Smart counters**: See total points and breakdown by color/value in real-time
+
+### Supported Field Types for Colors
+-   Single Select / Multiple Selects
+-   Checkbox (Yes/No)
+-   User / Created by / Last modified by
+-   Formula (text values)
+-   Button, Barcode, Rating, and other non-text/number fields
 
 ### User Experience
 -   **Points counter**: Always know how many locations are displayed
 -   **Color statistics**: See count per value (e.g., "15 En cours", "12 Annulé")
 -   **Search & filter**: Native Airtable filters work seamlessly
 -   **Airtable-like UI**: Familiar modal-based interface for customization
+-   **Info modal**: Built-in help with usage instructions and support information
+-   **Persistent preferences**: All customization settings saved locally
 
 ## Setup
 
@@ -81,40 +96,57 @@ To allow users to open record detail panels from the map:
 ### Data Flow
 1. **Record loading**: The extension reads records from your table with any filters you've applied
 2. **GPS parsing**: Coordinates are parsed directly from your GPS field (no external API calls needed)
-3. **Map rendering**: Valid locations are displayed as pins on the interactive map
-4. **Color application**: If configured, pins are colored based on your selected field values
-5. **Statistics**: Counters update in real-time showing total points and breakdown by color
+3. **Visibility filtering**: Only markers for visible values are displayed (if configured)
+4. **Map rendering**: Valid locations are displayed as customizable markers on the interactive map
+5. **Color application**: If configured, markers are colored based on your selected field values
+6. **Statistics**: Counters update in real-time showing total points and breakdown by color
 
 ### User Interactions
 
-#### Pin Interactions
+#### Configuration Panel
+- **Collapsible panel**: Located at the top of the map, closed by default
+- **Click header**: Click anywhere on the "Configuration de la carte" bar to expand/collapse
+- **Color customization column**: Configure field-based marker colors
+- **Easy removal**: Click the X icon next to a selected field to remove color customization
+- **Persistent state**: Panel state is saved per session
+
+#### Marker Interactions
 - **Hover**: See the location name in a tooltip
 - **Click**: Open a context menu with options:
   - **Zoom to location**: Focus on that specific point
   - **Show details**: Open the full Airtable record panel (when enabled)
 
 #### Map Controls
-- **Recenter button**: Reset the view to show all points
+- **Marker customization** (bottom-right):
+  - **Icon selector**: Choose from 3 marker styles (pin, circle, triangle)
+  - **Size slider**: Vertical slider to adjust marker size
+- **Recenter button**: Reset the view to show all points with crosshair icon
+- **Info icon**: Access help modal with usage instructions and support
 - **Navigation controls**: Standard Mapbox controls for zoom and rotation
 - **Pan & zoom**: Click and drag to pan, scroll to zoom
 
 #### Color Customization
-1. Click **"+ Add a field"** in the customization bar
-2. Select any compatible field (Select, Checkbox, User, Formula, etc.)
-3. **Quick setup**: Click "Auto" to assign colors automatically
-4. **Manual setup**: Click any color circle to choose from Airtable's color palette
-5. Colors are applied instantly and saved in your browser
+1. **Open configuration panel**: Click the header to expand
+2. Click **"Choisir un champ"** in the color customization column
+3. Select any compatible field from the searchable list
+4. **Quick setup**: Click "Auto" to assign colors randomly
+5. **Manual setup**: Click any color circle to choose from Airtable's color palette
+6. **Toggle visibility**: Click the eye icon next to any value to hide/show its markers
+7. **Remove field**: Click the X icon next to the field name to remove customization
 
-**Supported field types:**
-- Single Select / Multiple Selects
-- Checkbox (Yes/No)
-- User / Created by / Last modified by
-- Formula (text values)
+**Value Visibility:**
+- Hidden values appear grayed out in the modal
+- Markers for hidden values are not displayed on the map
+- Color counter reflects only visible values
+- Visibility settings are saved locally
 
-### View Persistence
-- Your last map position and zoom are saved to localStorage per base/table
-- Color customization preferences are also saved locally
-- On first load, the map auto-fits to show all points (unless disabled)
+### Persistence
+All settings are saved to localStorage per base/table:
+- Map position and zoom level
+- Color customization field and colors
+- Value visibility settings
+- Marker size and icon type
+- Configuration panel collapsed/expanded state
 
 ## Permissions
 
@@ -134,10 +166,16 @@ The extension requires the following permissions:
 - Verify the key has the `styles:read` scope
 - Check your browser console for error messages
 
-**Points not appearing**
+**Markers not appearing**
 - Verify your GPS coordinates are in the correct format: `latitude, longitude`
 - Check that coordinates are within valid ranges (latitude: -90 to 90, longitude: -180 to 180)
 - Ensure the GPS field is properly configured in custom properties
+- Check if values are hidden (eye icon with slash in color customization modal)
+- Verify that native Airtable filters are not hiding the records
+
+**White space at bottom of map**
+- Try closing and reopening the configuration panel
+- Refresh the page if issue persists
 
 ### Interaction Issues
 
@@ -154,13 +192,39 @@ The extension requires the following permissions:
 - localStorage may be blocked or cleared between sessions
 - Check if you're in private/incognito mode
 
+**Marker customization not persisting**
+- Ensure localStorage is enabled
+- Settings are saved per base and table combination
+- Try clearing browser cache if issues persist
+
+### Customization Issues
+
+**Can't select field for colors**
+- Text, number, and date fields are excluded (too many unique values)
+- Only categorical fields are available (Select, Checkbox, User, etc.)
+- Check that the table has compatible fields
+
+**Hidden values still showing**
+- Ensure you've clicked the eye icon to hide the value (icon should show slash)
+- Refresh if markers don't disappear immediately
+
+**Configuration panel not collapsing**
+- Click anywhere on the gray header bar
+- Panel state is saved automatically
+
 ### Performance
 
-**Slow rendering with many points**
-- Consider using Airtable's native filters to reduce the number of displayed points
-- The extension can handle hundreds of points efficiently
+**Slow rendering with many markers**
+- Consider using Airtable's native filters to reduce displayed markers
+- Hide values you don't need using the eye icon
+- The extension can handle hundreds of markers efficiently
+- Use marker size slider to make smaller markers for dense areas
 
-**Need help?** Check the ARCHITECTURE.md file for technical details or CUSTOMIZATION.md for color customization specifics.
+**Need help?** 
+- Click the info icon (ℹ️) on the map for built-in instructions
+- Contact ERP team via Teams for bugs
+- Create a ticket for feature requests
+- Check ARCHITECTURE.md for technical details
 
 ---
 
@@ -173,10 +237,18 @@ This extension uses GPS coordinates directly from your Airtable records - no ext
 - ✅ **Offline-ready**: Works without additional API dependencies
 - ✅ **Privacy-friendly**: Your location data stays in Airtable
 
+**Recent Improvements:**
+- ✅ **Modular architecture**: Code split into reusable hooks and components
+- ✅ **Performance optimized**: Proper memoization and efficient rendering
+- ✅ **41% smaller main file**: Better code organization with separation of concerns
+- ✅ **Custom Maki icons**: Uses Mapbox's official icon set with dynamic coloring
+
 For detailed technical documentation, see:
 - **ARCHITECTURE.md** - Component structure and data flow
 - **CUSTOMIZATION.md** - Color customization system details
 - **frontend/README.md** - Frontend code organization
+- **REFACTORING_SUMMARY.md** - Recent code improvements
+- **AUDIT_CONFORMITE.md** - Airtable API compliance (99% score)
 
 ### Security Note
 

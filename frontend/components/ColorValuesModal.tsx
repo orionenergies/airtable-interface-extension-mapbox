@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {Field} from '@airtable/blocks/interface/models';
 import {colorUtils} from '@airtable/blocks/interface/ui';
+import {EyeIcon, EyeSlashIcon} from '@phosphor-icons/react';
 import {ColorPicker} from './ColorPicker';
 import {type AirtableColor, DEFAULT_MARKER_COLOR} from '../constants';
 
@@ -10,11 +11,14 @@ interface ColorValuesModalProps {
     searchQuery: string;
     uniqueValues: string[];
     colorConfiguration: Map<string, AirtableColor>;
+    valueVisibility: Set<string>;
     onClose: () => void;
     onSearchChange: (query: string) => void;
     onColorChange: (value: string, color: AirtableColor) => void;
     onAutoAssignColors: () => void;
     onRemoveField: () => void;
+    onToggleValueVisibility: (value: string) => void;
+    isValueVisible: (value: string) => boolean;
 }
 
 export function ColorValuesModal({
@@ -23,11 +27,14 @@ export function ColorValuesModal({
     searchQuery,
     uniqueValues,
     colorConfiguration,
+    valueVisibility,
     onClose,
     onSearchChange,
     onColorChange,
     onAutoAssignColors,
     onRemoveField,
+    onToggleValueVisibility,
+    isValueVisible,
 }: ColorValuesModalProps) {
     const [colorPickerOpen, setColorPickerOpen] = useState(false);
     const [colorPickerValue, setColorPickerValue] = useState<string | null>(null);
@@ -99,10 +106,14 @@ export function ColorValuesModal({
                         const color = colorConfiguration.get(value) || DEFAULT_MARKER_COLOR;
                         const hexColor = colorUtils.getHexForColor(color);
 
+                        const visible = isValueVisible(value);
+
                         return (
                             <div
                                 key={value}
-                                className="flex items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors px-3 py-2"
+                                className={`flex items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors px-3 py-2 ${
+                                    !visible ? 'opacity-50 bg-gray-100 dark:bg-gray-800/50' : ''
+                                }`}
                             >
                                 <button
                                     onClick={(e) => handleColorIconClick(value, e)}
@@ -114,9 +125,35 @@ export function ColorValuesModal({
                                         style={{backgroundColor: hexColor}}
                                     />
                                 </button>
-                                <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">
+                                <span className={`flex-1 text-sm font-medium ${
+                                    visible 
+                                        ? 'text-gray-800 dark:text-gray-100' 
+                                        : 'text-gray-500 dark:text-gray-400'
+                                }`}>
                                     {value}
                                 </span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleValueVisibility(value);
+                                    }}
+                                    className="ml-3 flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                                    title={visible ? 'Masquer cette valeur' : 'Afficher cette valeur'}
+                                >
+                                    {visible ? (
+                                        <EyeIcon
+                                            size={18}
+                                            className="text-gray-600 dark:text-gray-300"
+                                            weight="regular"
+                                        />
+                                    ) : (
+                                        <EyeSlashIcon
+                                            size={18}
+                                            className="text-gray-400 dark:text-gray-500"
+                                            weight="regular"
+                                        />
+                                    )}
+                                </button>
                             </div>
                         );
                     })}

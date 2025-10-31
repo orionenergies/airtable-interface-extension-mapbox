@@ -12,6 +12,7 @@ interface UseGPSLocationsParams {
     isConfigured: boolean;
     colorField?: Field | null;
     colorConfiguration?: Map<string, AirtableColor>;
+    valueVisibility?: Set<string>;
 }
 
 /**
@@ -26,6 +27,7 @@ export function useGPSLocations({
     isConfigured,
     colorField,
     colorConfiguration,
+    valueVisibility,
 }: UseGPSLocationsParams): LocationData[] {
     const recordsHash = useMemo(() => {
         if (!isConfigured) return '';
@@ -39,8 +41,12 @@ export function useGPSLocations({
             ].join('::'),
         );
 
-        return relevantData.join('||') + JSON.stringify([...colorConfiguration?.entries() || []]);
-    }, [records, labelField, gpsField, isConfigured, colorField, colorConfiguration]);
+        return (
+            relevantData.join('||') +
+            JSON.stringify([...colorConfiguration?.entries() || []]) +
+            JSON.stringify([...(valueVisibility || new Set())])
+        );
+    }, [records, labelField, gpsField, isConfigured, colorField, colorConfiguration, valueVisibility]);
 
     const previousHashRef = useRef<string>('');
     const stableDataRef = useRef<LocationData[]>([]);
@@ -62,6 +68,16 @@ export function useGPSLocations({
                     if (colorField && colorConfiguration) {
                         colorFieldValue = record.getCellValueAsString(colorField);
                         if (colorFieldValue) {
+                            // Vérifier si la valeur est visible
+                            // Si valueVisibility est undefined ou vide Set, toutes les valeurs sont visibles
+                            const isVisible =
+                                !valueVisibility || valueVisibility.size === 0 || valueVisibility.has(colorFieldValue);
+
+                            // Si la valeur n'est pas visible, on ne l'ajoute pas
+                            if (!isVisible) {
+                                continue;
+                            }
+
                             color = colorConfiguration.get(colorFieldValue) || DEFAULT_MARKER_COLOR;
                         }
                     }
