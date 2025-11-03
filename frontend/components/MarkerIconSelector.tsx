@@ -74,11 +74,19 @@ export function MarkerIconSelector({
             <div className="relative">
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center justify-center"
-                    title="Changer l'icône du marqueur"
+                    className="group relative bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center justify-center"
                     aria-label="Changer l'icône du marqueur"
                 >
                     {renderPreviewIcon()}
+                    {/* Tooltip */}
+                    <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-40">
+                        <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-1.5 rounded-lg shadow-lg">
+                            Changer la forme du marqueur
+                            <div className="absolute left-full top-1/2 -translate-y-1/2 -ml-1">
+                                <div className="w-2 h-2 bg-gray-900 dark:bg-gray-100 rotate-45"></div>
+                            </div>
+                        </div>
+                    </div>
                 </button>
 
                 {/* Dropdown */}
@@ -121,7 +129,7 @@ export function MarkerIconSelector({
             </div>
 
             {/* Vertical Slider */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
                 <input
                     type="range"
                     min={12}
@@ -129,9 +137,17 @@ export function MarkerIconSelector({
                     value={markerSize}
                     onChange={(e) => onSizeChange(Number(e.target.value))}
                     className="marker-size-slider-vertical w-2 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
-                    title={`Taille des marqueurs: ${markerSize}px`}
                     aria-label="Taille des marqueurs"
                 />
+                {/* Tooltip */}
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-40">
+                    <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-1.5 rounded-lg shadow-lg">
+                        Ajuster la taille des marqueurs
+                        <div className="absolute left-full top-1/2 -translate-y-1/2 -ml-1">
+                            <div className="w-2 h-2 bg-gray-900 dark:bg-gray-100 rotate-45"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

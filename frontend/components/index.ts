@@ -2,6 +2,7 @@ export {ConfigurationScreen} from './ConfigurationScreen';
 export {MapMarker} from './MapMarker';
 export {PointsCounter} from './PointsCounter';
 export {RecenterButton} from './RecenterButton';
+export {RefreshButton} from './RefreshButton';
 export {MapControlsGroup} from './MapControlsGroup';
 export {ColorPicker} from './ColorPicker';
 export {ColorCustomizationBar} from './ColorCustomizationBar';

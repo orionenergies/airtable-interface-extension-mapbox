@@ -30,6 +30,7 @@ import {
     MapConfigurationPanel,
     ColorConfigurationColumn,
     MapControlsGroup,
+    RefreshButton,
 } from './components';
 
 function MapExtensionApp() {
@@ -51,6 +52,7 @@ function MapExtensionApp() {
     // Map reference and ready state
     const mapRef = useRef<MapRef | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
+    const [mapRefreshKey, setMapRefreshKey] = useState(0);
 
     // Marker customization (size and icon type)
     const {markerSize, markerIconType, setMarkerSize, setMarkerIconType} = useMarkerCustomization(
@@ -249,6 +251,7 @@ function MapExtensionApp() {
                 </div>
             )}
             <MapBoxMap
+                key={mapRefreshKey}
                 mapLib={mapboxgl}
                 {...viewState}
                 style={{
@@ -288,6 +291,13 @@ function MapExtensionApp() {
 
                 <PointsCounter count={locations.length} colorCounters={colorCounters} />
                 <InfoIcon onClick={() => setIsInfoModalOpen(true)} />
+                <RefreshButton
+                    onClick={() => {
+                        setIsMapReady(false);
+                        initialCameraAppliedRef.current = false;
+                        setMapRefreshKey((prev) => prev + 1);
+                    }}
+                />
                 {locations.length > 0 && (
                     <MapControlsGroup
                         onRecenter={handleRecenter}
