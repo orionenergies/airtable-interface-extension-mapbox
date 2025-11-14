@@ -4,6 +4,27 @@ This Airtable Interface Extension displays your records on a fullscreen interact
 
 📦 **Repository**: [orionenergies/airtable-interface-extension-mapbox](https://github.com/orionenergies/airtable-interface-extension-mapbox)
 
+## 📑 Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Development](#development)
+  - [Prerequisites](#prerequisites)
+  - [Installation Steps](#installation-steps)
+  - [Development with Block SDK](#development-with-block-sdk)
+  - [Available Scripts](#available-scripts)
+  - [Deploying to Airtable](#deploying-to-airtable)
+- [Architecture & Project Organization](#architecture--project-organization)
+  - [Project Structure](#project-structure)
+  - [Component Architecture](#component-architecture)
+  - [Hooks Architecture](#hooks-architecture)
+  - [Data Flow](#data-flow)
+- [Setup](#setup)
+- [How It Works](#how-it-works)
+- [Permissions](#permissions)
+- [Troubleshooting](#troubleshooting)
+- [Technical Details](#technical-details)
+
 ## Features
 
 ### Core Mapping
@@ -48,6 +69,268 @@ This Airtable Interface Extension displays your records on a fullscreen interact
 -   **Airtable-like UI**: Familiar modal-based interface for customization
 -   **Info modal**: Built-in help with usage instructions and support information
 -   **Persistent preferences**: All customization settings saved locally
+
+## Installation
+
+### Prerequisites
+
+Before installing the project, ensure you have the following installed:
+
+- **Node.js** (v18 or higher recommended)
+- **npm** (v9 or higher) or **yarn**
+- **Git** (for cloning the repository)
+- An **Airtable account** with access to Interface Extensions
+- A **Mapbox account** (free tier is sufficient)
+
+### Installation Steps
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/orionenergies/airtable-interface-extension-mapbox.git
+   cd airtable-interface-extension-mapbox
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+   
+   If you encounter peer dependency issues with React 19, use:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+3. **Verify installation**:
+   ```bash
+   npm run typecheck
+   npm run lint
+   ```
+
+## Development
+
+### Development with Block SDK
+
+This project uses the **Airtable Blocks SDK** (Interface Extensions) for development. The SDK provides hooks and utilities to interact with Airtable data and UI.
+
+#### Key SDK Imports
+
+The extension uses two main import paths:
+
+```typescript
+// UI hooks and functions
+import {
+  initializeBlock,
+  useBase,
+  useRecords,
+  useCustomProperties,
+  useColorScheme,
+  expandRecord
+} from '@airtable/blocks/interface/ui';
+
+// Field types and models
+import { FieldType } from '@airtable/blocks/interface/models';
+```
+
+#### Entry Point
+
+The main entry point is `frontend/index.tsx`, which must conclude with:
+
+```typescript
+initializeBlock({ interface: () => <MapExtensionApp /> });
+```
+
+#### Development Workflow
+
+1. **Start development**:
+   - The Airtable Blocks SDK uses webpack bundling via `@airtable/blocks-webpack-bundler`
+   - Development is done through Airtable's Interface Extension development environment
+   - No local dev server is needed - the extension runs directly in Airtable
+
+2. **Code Structure**:
+   - All frontend code is in the `frontend/` directory
+   - Components are in `frontend/components/`
+   - Custom hooks are in `frontend/hooks/`
+   - Utilities are in `frontend/utils/`
+   - TypeScript types are in `frontend/types.ts`
+
+3. **Type Checking**:
+   ```bash
+   npm run typecheck
+   ```
+
+4. **Linting**:
+   ```bash
+   npm run lint
+   ```
+
+### Available Scripts
+
+- **`npm run lint`**: Run ESLint on all TypeScript/JavaScript files in the `frontend/` directory
+- **`npm run typecheck`**: Run TypeScript compiler to check for type errors without emitting files
+
+### Deploying to Airtable
+
+To deploy your extension to Airtable:
+
+1. **Build the extension**:
+   The Airtable Blocks SDK automatically handles bundling when you upload the extension. However, you can verify your code is ready by running:
+   ```bash
+   npm run typecheck
+   npm run lint
+   ```
+
+2. **Package the extension**:
+   - Ensure all your code is committed and ready
+   - The extension is packaged as a directory containing:
+     - `block.json` - Extension configuration
+     - `frontend/` - All frontend source code
+     - `package.json` - Dependencies (for reference)
+
+3. **Upload to Airtable**:
+   - Go to your Airtable base
+   - Navigate to **Extensions** → **Build a custom extension**
+   - Select **Interface Extension**
+   - Upload your extension directory or connect via CLI (if available)
+   - Configure custom properties in the Interface Extension settings
+
+4. **Using Airtable CLI** (if configured):
+   ```bash
+   # If you have Airtable CLI installed
+   airtable blocks:deploy
+   ```
+
+   **Note**: The exact CLI command may vary. Check Airtable's latest documentation for Interface Extension deployment methods.
+
+5. **Verify deployment**:
+   - Add the extension to an Interface page
+   - Configure custom properties (Mapbox API key, fields, etc.)
+   - Test the extension functionality
+
+## Architecture & Project Organization
+
+### Project Structure
+
+```
+map_custom/
+├── block.json                    # Extension configuration
+├── package.json                  # Dependencies and scripts
+├── tsconfig.json                 # TypeScript configuration
+├── tailwind.config.js            # Tailwind CSS configuration
+├── eslint.config.mjs             # ESLint configuration
+│
+├── frontend/                      # Main frontend code
+│   ├── index.tsx                 # Entry point and main component
+│   ├── types.ts                  # TypeScript type definitions
+│   ├── constants.ts              # Application constants
+│   ├── customProperties.ts       # Custom properties configuration
+│   ├── style.css                 # Global styles
+│   │
+│   ├── components/               # React components
+│   │   ├── ConfigurationScreen.tsx
+│   │   ├── MapMarker.tsx
+│   │   ├── PointsCounter.tsx
+│   │   ├── RecenterButton.tsx
+│   │   ├── ColorCustomizationBar.tsx
+│   │   ├── ColorFieldSelectionModal.tsx
+│   │   ├── ColorValuesModal.tsx
+│   │   ├── ColorPicker.tsx
+│   │   ├── MapConfigurationPanel.tsx
+│   │   ├── MapControlsGroup.tsx
+│   │   ├── MarkerIconSelector.tsx
+│   │   ├── MarkerSizeControl.tsx
+│   │   ├── InfoIcon.tsx
+│   │   ├── InfoModal.tsx
+│   │   ├── RefreshButton.tsx
+│   │   ├── configuration/
+│   │   │   └── ColorConfigurationColumn.tsx
+│   │   └── index.ts              # Barrel exports
+│   │
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── useMapViewState.ts    # Map view state management
+│   │   ├── useGPSLocations.ts    # GPS coordinate parsing
+│   │   ├── useColorCustomization.ts  # Color customization logic
+│   │   ├── useColorCounters.ts   # Color counters calculation
+│   │   ├── useMarkerCustomization.ts # Marker size/icon state
+│   │   ├── useMapInteractions.ts # UI interaction state
+│   │   ├── useMapHandlers.ts     # Event handlers
+│   │   ├── useInitialMapView.ts   # Initial map positioning
+│   │   └── index.ts              # Barrel exports
+│   │
+│   └── utils/                    # Utility functions
+│       ├── gpsParser.ts          # GPS coordinate parsing
+│       ├── makiIcons.ts          # Mapbox Maki icon utilities
+│       └── index.ts              # Barrel exports
+│
+└── context-orion/                # Orion-specific context files
+```
+
+### Component Architecture
+
+The extension follows a **modular component architecture** with clear separation of concerns:
+
+#### Main Component (`frontend/index.tsx`)
+- **Orchestrates** all hooks and components
+- **Manages** custom properties configuration
+- **Handles** conditional rendering (configuration screen, error screen, map interface)
+- **Coordinates** data flow between hooks
+
+#### UI Components (`frontend/components/`)
+- **ConfigurationScreen**: Setup instructions when extension is not configured
+- **MapMarker**: Individual map markers with context menus
+- **PointsCounter**: Displays total points and color breakdown
+- **RecenterButton**: Button to reset map view
+- **ColorCustomizationBar**: Compact bar for color management
+- **ColorFieldSelectionModal**: Modal for selecting color field
+- **ColorValuesModal**: Modal for customizing colors per value
+- **ColorPicker**: Full-screen color selection modal
+- **MapConfigurationPanel**: Collapsible configuration panel
+- **MapControlsGroup**: Marker customization controls
+- **InfoModal**: Help and support information
+
+### Hooks Architecture
+
+The extension uses **custom React hooks** to manage state and logic:
+
+#### State Management Hooks
+- **`useMapViewState`**: Manages map view (lat, lng, zoom) with localStorage persistence
+- **`useMarkerCustomization`**: Manages marker size and icon type with persistence
+- **`useMapInteractions`**: Manages UI interaction state (hover, menus, modals)
+
+#### Data Processing Hooks
+- **`useGPSLocations`**: Parses GPS coordinates from records and returns location data
+- **`useColorCustomization`**: Complete color customization state management
+- **`useColorCounters`**: Calculates statistics for color-coded markers
+
+#### Business Logic Hooks
+- **`useMapHandlers`**: Event handlers for map interactions (click, zoom, show details)
+- **`useInitialMapView`**: Handles initial map positioning (auto-center vs saved view)
+
+### Data Flow
+
+1. **Initialization**:
+   - Extension loads → `initializeBlock` called
+   - Custom properties loaded via `useCustomProperties`
+   - Base and table accessed via `useBase` and `useRecords`
+
+2. **Data Processing**:
+   - Records → `useGPSLocations` → Valid location data
+   - Records + Color config → `useColorCustomization` → Color assignments
+   - Locations + Color config → `useColorCounters` → Statistics
+
+3. **State Management**:
+   - Map view state persisted in localStorage via `useMapViewState`
+   - Marker customization persisted via `useMarkerCustomization`
+   - Color configuration persisted via `useColorCustomization`
+
+4. **Rendering**:
+   - Map renders with markers from processed location data
+   - UI components display statistics and controls
+   - User interactions trigger handlers from `useMapHandlers`
+
+5. **Updates**:
+   - Record changes trigger re-renders via `useRecords` reactivity
+   - State changes update localStorage automatically
+   - Map view updates reactively via `useMapViewState`
 
 ## Setup
 
@@ -224,7 +507,7 @@ The extension requires the following permissions:
 - Click the info icon (ℹ️) on the map for built-in instructions
 - Contact ERP team via Teams for bugs
 - Create a ticket for feature requests
-- Check ARCHITECTURE.md for technical details
+- Check REFACTORING_SUMMARY.md for technical details
 
 ---
 
@@ -244,11 +527,8 @@ This extension uses GPS coordinates directly from your Airtable records - no ext
 - ✅ **Custom Maki icons**: Uses Mapbox's official icon set with dynamic coloring
 
 For detailed technical documentation, see:
-- **ARCHITECTURE.md** - Component structure and data flow
-- **CUSTOMIZATION.md** - Color customization system details
 - **frontend/README.md** - Frontend code organization
 - **REFACTORING_SUMMARY.md** - Recent code improvements
-- **AUDIT_CONFORMITE.md** - Airtable API compliance (99% score)
 
 ### Security Note
 
