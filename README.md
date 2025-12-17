@@ -112,6 +112,26 @@ Before installing the project, ensure you have the following installed:
 
 This project uses the **Airtable Blocks SDK** (Interface Extensions) for development. The SDK provides hooks and utilities to interact with Airtable data and UI.
 
+#### Installing the Block SDK CLI
+
+Before you can develop with the Block SDK, you need to install the Airtable Blocks CLI:
+
+1. **Install the CLI globally**:
+   ```bash
+   npm install -g @airtable/blocks-cli
+   ```
+
+2. **Verify the installation**:
+   ```bash
+   block --version
+   ```
+
+3. **Authenticate with Airtable**:
+   - The CLI will prompt you for your Airtable personal access token
+   - You need a token with the `block:manage` scope
+   - Get your token from: https://airtable.com/create/tokens
+   - Make sure to grant the `block:manage` scope when creating the token
+
 #### Key SDK Imports
 
 The extension uses two main import paths:
@@ -141,10 +161,14 @@ initializeBlock({ interface: () => <MapExtensionApp /> });
 
 #### Development Workflow
 
-1. **Start development**:
-   - The Airtable Blocks SDK uses webpack bundling via `@airtable/blocks-webpack-bundler`
-   - Development is done through Airtable's Interface Extension development environment
-   - No local dev server is needed - the extension runs directly in Airtable
+1. **Start the development server**:
+   ```bash
+   block run
+   ```
+   This command:
+   - Starts a local development server
+   - Provides a URL to load your extension in Airtable
+   - Enables hot-reloading for faster development
 
 2. **Code Structure**:
    - All frontend code is in the `frontend/` directory
@@ -167,44 +191,77 @@ initializeBlock({ interface: () => <MapExtensionApp /> });
 
 - **`npm run lint`**: Run ESLint on all TypeScript/JavaScript files in the `frontend/` directory
 - **`npm run typecheck`**: Run TypeScript compiler to check for type errors without emitting files
+- **`block run`**: Start the development server for local testing
+- **`block release`**: Build the extension for deployment
+
+### Testing Your Extension
+
+#### Setting up Development Mode
+
+1. **Start the development server**:
+   ```bash
+   block run
+   ```
+   This starts a local server and provides instructions for loading your extension.
+
+2. **Load your extension in Airtable**:
+   - Open your Airtable base
+   - Navigate to an Interface page
+   - Add a new Interface Extension (or select your existing one)
+   - Click on the extension to open the properties panel on the right side
+   - Click the **`</> Develop`** button to load your locally running extension
+
+3. **Handle self-signed certificates** (first time only):
+   - If this is your first time developing an Airtable extension, you may see an error preventing your extension from loading
+   - Follow the instructions in the properties panel to allow self-signed certificates
+   - Once completed, click the **"Reload extension"** button
+   - Your extension should now load correctly
+
+4. **Development workflow**:
+   - While `block run` is active, changes to your code will automatically reload in Airtable
+   - You can test your extension in real-time as you develop
+   - Check the terminal for any build errors or warnings
 
 ### Deploying to Airtable
 
 To deploy your extension to Airtable:
 
 1. **Build the extension**:
-   The Airtable Blocks SDK automatically handles bundling when you upload the extension. However, you can verify your code is ready by running:
+   ```bash
+   block release
+   ```
+   This command:
+   - Bundles your extension for production
+   - Creates an optimized build
+   - Validates your extension configuration
+
+2. **Verify your code**:
+   Before deploying, ensure your code is ready:
    ```bash
    npm run typecheck
    npm run lint
    ```
 
-2. **Package the extension**:
+3. **Package the extension**:
    - Ensure all your code is committed and ready
    - The extension is packaged as a directory containing:
      - `block.json` - Extension configuration
      - `frontend/` - All frontend source code
      - `package.json` - Dependencies (for reference)
 
-3. **Upload to Airtable**:
+4. **Upload to Airtable**:
    - Go to your Airtable base
    - Navigate to **Extensions** → **Build a custom extension**
    - Select **Interface Extension**
-   - Upload your extension directory or connect via CLI (if available)
+   - Upload your extension directory
    - Configure custom properties in the Interface Extension settings
-
-4. **Using Airtable CLI** (if configured):
-   ```bash
-   # If you have Airtable CLI installed
-   airtable blocks:deploy
-   ```
-
-   **Note**: The exact CLI command may vary. Check Airtable's latest documentation for Interface Extension deployment methods.
 
 5. **Verify deployment**:
    - Add the extension to an Interface page
    - Configure custom properties (Mapbox API key, fields, etc.)
    - Test the extension functionality
+
+**Note**: For detailed deployment instructions, refer to the [Airtable Interface Extensions documentation](https://airtable.com/developers/interface-extensions/guides/polishing-your-extension).
 
 ## Architecture & Project Organization
 
